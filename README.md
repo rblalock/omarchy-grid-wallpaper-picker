@@ -42,8 +42,10 @@ omarchy-shell shell summon rblalock.hex-picker '{"mode":"themes"}'
 | App launcher / Style → Hex picker | Open |
 | `Tab` | Themes → Backgrounds → Gallery |
 | Type | Filter |
-| `Enter` | Apply, or install the default **Palette** variant from the gallery |
-| Right-click (gallery) | Install **Palette / Warm / Cool / Material / Aether** |
+| `Enter` | Apply. In Gallery: first Enter flips the hex (Palette selected), second Enter installs |
+| Click a flipped ramp | Install that palette (Warm / Cool / Material / Aether) |
+| Arrows (while flipped) | Move among palettes |
+| Right-click (gallery) | Same palettes in a menu |
 | Right-click (user theme) | Delete (`omarchy theme remove`) |
 | `Esc` | Close |
 

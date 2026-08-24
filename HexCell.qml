@@ -21,6 +21,8 @@ Item {
   property bool animateEnter: true
   property bool scrolling: false
   property var host: null
+  property bool flipped: false
+  property int paletteIndex: 0
   property color accent: Color.imagePicker.selectedBorder
   property color idleBorder: Color.imagePicker.unselectedBorder
   property color dimColor: Color.background
@@ -54,6 +56,13 @@ Item {
   signal clicked()
   signal entered()
   signal contextRequested(real gx, real gy)
+  signal palettePicked(int index)
+
+  readonly property var variants: item && item.variants ? item.variants : []
+  property real flipAngle: flipped ? 180 : 0
+  readonly property bool showBack: flipAngle >= 90
+
+  Behavior on flipAngle { NumberAnimation { duration: 280; easing.type: Easing.InOutCubic } }
 
   width: _r * 1.73205080757
   height: _r * 2
@@ -99,6 +108,8 @@ Item {
       return 0.76
     if (cell.applyTarget)
       return 1.12
+    if (cell.flipped)
+      return 1.16
     if (cell.selected)
       return 1.06
     if (cell.hovered)
@@ -116,12 +127,20 @@ Item {
 
   scale: visualScale
   opacity: visualOpacity
-  z: applyTarget ? 80 : (selected ? 40 : (hovered ? 20 : 1))
+  z: flipped ? 120 : (applyTarget ? 80 : (selected ? 40 : (hovered ? 20 : 1)))
   transformOrigin: Item.Center
-  transform: Translate {
-    y: cell.appeared ? 0 : 14
-    Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-  }
+  transform: [
+    Translate {
+      y: cell.appeared ? 0 : 14
+      Behavior on y { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+    },
+    Rotation {
+      origin.x: cell._cx
+      origin.y: cell._cy
+      axis { x: 0; y: 1; z: 0 }
+      angle: cell.flipAngle
+    }
+  ]
 
   Behavior on scale {
     NumberAnimation {
@@ -175,7 +194,8 @@ Item {
   Item {
     id: imageLayer
     anchors.fill: parent
-    layer.enabled: cell.appeared
+    visible: !cell.showBack
+    layer.enabled: cell.appeared && !cell.showBack
     layer.smooth: !cell.scrolling
     layer.effect: MultiEffect {
       maskEnabled: true
@@ -211,6 +231,93 @@ Item {
     }
   }
 
+  Item {
+    id: paletteLayer
+    anchors.fill: parent
+    visible: cell.showBack
+    layer.enabled: cell.showBack
+    layer.smooth: true
+    transform: Rotation {
+      origin.x: cell._cx
+      origin.y: cell._cy
+      axis { x: 0; y: 1; z: 0 }
+      angle: 180
+    }
+    layer.effect: MultiEffect {
+      maskEnabled: true
+      maskSource: hexMask
+      maskThresholdMin: 0.3
+      maskSpreadAtMin: 0.3
+    }
+
+    Rectangle {
+      anchors.fill: parent
+      color: cell.dimColor
+    }
+
+    Column {
+      anchors.centerIn: parent
+      width: cell.width * 0.62
+      spacing: Math.max(2, Math.round(cell.height * 0.012))
+
+      Repeater {
+        model: cell.variants.length
+
+        Rectangle {
+          id: variantRow
+          required property int index
+          readonly property var variant: cell.variants[index] || ({})
+          width: parent.width
+          height: Math.max(18, Math.round(cell.height * 0.11))
+          radius: height / 2
+          color: index === cell.paletteIndex ? Util.alpha(cell.accent, 0.22) : Util.alpha("#ffffff", 0.06)
+          border.width: index === cell.paletteIndex ? 2 : 1
+          border.color: index === cell.paletteIndex ? cell.accent : Util.alpha("#ffffff", 0.18)
+
+          Row {
+            id: ramp
+            anchors.left: parent.left
+            anchors.leftMargin: 6
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+            Repeater {
+              model: 5
+              Rectangle {
+                required property int index
+                width: Math.max(6, Math.round(variantRow.height * 0.42))
+                height: width
+                radius: 1
+                color: {
+                  var cols = variantRow.variant.colors || []
+                  var map = [0, 1, 4, 5, 8]
+                  var ci = map[index]
+                  return (cols && cols[ci]) ? cols[ci] : Util.alpha("#ffffff", 0.25)
+                }
+              }
+            }
+          }
+
+          Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 7
+            anchors.verticalCenter: parent.verticalCenter
+            text: variantRow.variant.label || ""
+            color: cell.accent
+            font.pixelSize: Math.max(8, Math.round(cell.height * 0.048))
+            font.family: "monospace"
+          }
+
+          MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: cell.palettePicked(variantRow.index)
+          }
+        }
+      }
+    }
+  }
+
   Shape {
     anchors.fill: parent
     antialiasing: true
@@ -231,7 +338,7 @@ Item {
   }
 
   Rectangle {
-    visible: cell.current
+    visible: cell.current && !cell.showBack
     width: 8
     height: 8
     radius: 4
@@ -247,6 +354,7 @@ Item {
   MouseArea {
     id: mouse
     anchors.fill: parent
+    enabled: !cell.showBack
     hoverEnabled: true
     preventStealing: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton

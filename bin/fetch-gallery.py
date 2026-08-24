@@ -9,6 +9,7 @@ Prints {"ok":true,"path":"...","count":N} (or {"ok":false,"error":"..."}).
 """
 import json
 import os
+import re
 import sys
 import tempfile
 import time
@@ -22,12 +23,31 @@ GALLERY = os.path.join(CACHE_DIR, "gallery.json")
 GOTAR = os.path.expanduser("~/.cache/gotar.omarchy-themes/manifest.json")
 TTL = 24 * 3600
 VARIANT_ORDER = ["palette", "gruvbox", "nord", "material", "aether"]
-GALLERY_FORMAT = 2
+GALLERY_FORMAT = 3
+ANSI = ["color%d" % i for i in range(16)]
 
 
 def fail(msg):
     print(json.dumps({"ok": False, "error": str(msg)}, separators=(",", ":")))
     sys.exit(1)
+
+
+def variant_colors(t):
+    c = t.get("c")
+    if isinstance(c, list) and len(c) >= 8:
+        cols = [x for x in c if isinstance(x, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", x)]
+        if len(cols) >= 8:
+            return cols[:16]
+    colors = t.get("colors")
+    if isinstance(colors, dict):
+        out = []
+        for k in ANSI:
+            v = colors.get(k)
+            if not isinstance(v, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", v):
+                return []
+            out.append(v)
+        return out
+    return []
 
 
 def variants_of(th):
@@ -38,14 +58,14 @@ def variants_of(th):
         t = th.get(key)
         if not isinstance(t, dict):
             continue
-        n = t.get("n") or ""
-        ct = t.get("ct") or ""
-        bg = t.get("bg") or ""
+        n = t.get("n") or t.get("name") or ""
+        ct = t.get("ct") or t.get("colors_toml") or ""
+        bg = t.get("bg") or t.get("background") or ""
         if not _sec.safe_slug(n) or not ct or not _sec.safe_relpath(ct):
             continue
         if bg and not _sec.safe_relpath(bg):
             bg = ""
-        out.append({"k": key, "n": n, "ct": ct, "bg": bg})
+        out.append({"k": key, "n": n, "ct": ct, "bg": bg, "c": variant_colors(t)})
     return out
 
 
@@ -176,7 +196,12 @@ def fetch_from_source():
                 continue
             ct = t.get("colors_toml") if isinstance(t.get("colors_toml"), str) else ""
             bg = t.get("background") if isinstance(t.get("background"), str) else ""
-            slim_th[v] = {"n": n, "ct": ct, "bg": bg}
+            slim_th[v] = {
+                "n": n,
+                "ct": ct,
+                "bg": bg,
+                "colors": t.get("colors") if isinstance(t.get("colors"), dict) else {},
+            }
         item = compact_entry({
             "p": path,
             "t": e.get("title") if isinstance(e.get("title"), str) else "",

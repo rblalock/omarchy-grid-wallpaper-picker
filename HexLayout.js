@@ -149,7 +149,8 @@ function parseGallery(obj) {
         label: VARIANT_LABEL[v.k] || v.k || v.n,
         slug: v.n,
         ct: v.ct,
-        bg: v.bg || ""
+        bg: v.bg || "",
+        colors: Array.isArray(v.c) ? v.c : []
       })
     }
     if (variants.length === 0) {

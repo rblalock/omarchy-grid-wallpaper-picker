@@ -26,6 +26,8 @@ Item {
   property string statusText: ""
   property int contextIndex: -1
   property var contextActions: []
+  property int flippedIndex: -1
+  property int paletteIndex: 0
   property int thumbRev: 0
   property var thumbOnDisk: ({})
   property var thumbQueue: []
@@ -115,6 +117,7 @@ Item {
     root.applying = false
     root.applyIndex = -1
     root.statusText = ""
+    root.unflip()
     root.opened = true
 
     var cached = root.cacheFor(nextMode)
@@ -145,6 +148,7 @@ Item {
     root.applying = false
     root.applyIndex = -1
     root.hideMenu()
+    root.unflip()
   }
 
   function dismiss() {
@@ -152,6 +156,7 @@ Item {
     root.applying = false
     root.applyIndex = -1
     root.hideMenu()
+    root.unflip()
     if (root.shell && typeof root.shell.hide === "function")
       root.shell.hide((root.manifest && root.manifest.id) || "rblalock.hex-picker")
   }
@@ -267,14 +272,53 @@ Item {
     root.open(JSON.stringify({ mode: root.nextModeName() }))
   }
 
+  function unflip() {
+    root.flippedIndex = -1
+    root.paletteIndex = 0
+  }
+
+  function cyclePalette(delta) {
+    var item = root.flippedIndex >= 0 ? root.visibleItems[root.flippedIndex] : null
+    var n = item && item.variants ? item.variants.length : 0
+    if (n <= 0)
+      return
+    root.paletteIndex = (root.paletteIndex + delta + n) % n
+  }
+
+  function applyFlipped() {
+    var item = root.flippedIndex >= 0 ? root.visibleItems[root.flippedIndex] : root.currentItem()
+    if (!item)
+      return
+    var v = (item.variants && item.variants[root.paletteIndex]) || {}
+    root.installGalleryItem(item, {
+      slug: v.slug || item.path,
+      base: item.apply ? item.apply.base : "",
+      ct: v.ct || "",
+      bg: v.bg || "",
+      label: item.label + " · " + (v.label || "Palette")
+    })
+    root.unflip()
+  }
+
   function activateIndex(index) {
     if (index < 0 || index >= root.visibleItems.length)
       return
     root.hideMenu()
-    if (index === root.selectedIndex)
-      root.applySelected()
-    else
+    if (index !== root.selectedIndex) {
+      root.unflip()
       root.selectIndex(index)
+      return
+    }
+    if (root.mode === "gallery") {
+      if (root.flippedIndex !== index) {
+        root.flippedIndex = index
+        root.paletteIndex = 0
+      } else {
+        root.applyFlipped()
+      }
+      return
+    }
+    root.applySelected()
   }
 
   function applySelected() {
@@ -450,7 +494,7 @@ Item {
     if (root.filterText)
       return "filter: " + root.filterText + " · " + root.visibleItems.length
     if (root.mode === "gallery")
-      return "Tab to switch · Enter installs Palette · Right-click for Warm/Cool/Material/Aether"
+      return "Tab to switch · Enter flips hex · Enter again applies Palette"
     if (root.mode === "themes")
       return "Tab to switch · Enter to apply · Right-click to delete"
     return "Tab to switch · Enter to apply · Esc to close"
@@ -641,25 +685,35 @@ Item {
         if (event.key === Qt.Key_Escape) {
           if (contextMenu.visible)
             root.hideMenu()
+          else if (root.flippedIndex >= 0)
+            root.unflip()
           else if (root.filterText)
             root.setFilter("")
           else
             root.dismiss()
           event.accepted = true
         } else if (event.key === Qt.Key_Tab) {
+          root.unflip()
           root.switchMode()
           event.accepted = true
         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
           if (contextMenu.visible)
             root.activateContext(0)
           else
-            root.applySelected()
+            root.activateIndex(root.selectedIndex)
           event.accepted = true
         } else if (event.key === Qt.Key_Delete && root.mode === "themes") {
           root.contextIndex = root.selectedIndex
           root.deleteContextTheme()
           event.accepted = true
+        } else if (root.flippedIndex >= 0 && (event.key === Qt.Key_Left || event.key === Qt.Key_Up)) {
+          root.cyclePalette(-1)
+          event.accepted = true
+        } else if (root.flippedIndex >= 0 && (event.key === Qt.Key_Right || event.key === Qt.Key_Down)) {
+          root.cyclePalette(1)
+          event.accepted = true
         } else if (Util.editsFilter(event, root.filterText)) {
+          root.unflip()
           root.setFilter(Util.editedFilter(event, root.filterText))
           event.accepted = true
         } else if (event.key === Qt.Key_Left) {
@@ -675,6 +729,7 @@ Item {
           root.selectNeighbor(0, 1)
           event.accepted = true
         } else if (event.text && event.text.length === 1 && event.text.charCodeAt(0) >= 32 && event.text.charCodeAt(0) !== 127 && (event.modifiers === Qt.NoModifier || event.modifiers === Qt.ShiftModifier)) {
+          root.unflip()
           root.setFilter(root.filterText + event.text)
           event.accepted = true
         }
@@ -755,6 +810,8 @@ Item {
             radius: hexList.radius
             host: root
             scrolling: hexList.moving
+            flipped: itemIndex === root.flippedIndex
+            paletteIndex: root.paletteIndex
             selected: itemIndex === root.selectedIndex
             current: item ? item.current === true : false
             wave: root.wave
@@ -770,8 +827,15 @@ Item {
 
             onClicked: root.activateIndex(itemIndex)
             onEntered: {
-              if (!root.applying)
-                root.selectedIndex = itemIndex
+              if (root.applying)
+                return
+              if (root.flippedIndex >= 0 && itemIndex !== root.flippedIndex)
+                return
+              root.selectedIndex = itemIndex
+            }
+            onPalettePicked: function(i) {
+              root.paletteIndex = i
+              root.applyFlipped()
             }
             onContextRequested: function(gx, gy) {
               root.openContextMenu(itemIndex, gx, gy)
@@ -791,7 +855,11 @@ Item {
       width: Math.min(parent.width - Style.space(80), Style.space(720))
       text: {
         var item = root.currentItem()
-        return item ? item.label : ""
+        if (!item)
+          return ""
+        if (root.flippedIndex >= 0 && item.variants && item.variants[root.paletteIndex])
+          return item.label + " · " + item.variants[root.paletteIndex].label
+        return item.label
       }
       color: root.foreground
       font.family: Style.font.menuFamily
