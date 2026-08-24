@@ -25,6 +25,7 @@ Item {
   property string queuedMode: ""
   property string statusText: ""
   property int contextIndex: -1
+  property var contextActions: []
   property int thumbRev: 0
   property var thumbOnDisk: ({})
   property var thumbQueue: []
@@ -286,17 +287,7 @@ Item {
     root.hideMenu()
 
     if (root.mode === "gallery") {
-      var spec = item.apply || {}
-      root.statusText = "Installing " + item.label + "…"
-      galleryApplyProc.command = [
-        "python3", root.applyGallery,
-        String(spec.slug || item.path || ""),
-        String(spec.base || ""),
-        String(spec.ct || ""),
-        String(spec.bg || ""),
-        String(spec.fallback || "")
-      ]
-      galleryApplyProc.running = true
+      root.installGalleryItem(item, item.apply || {})
       return
     }
 
@@ -306,6 +297,23 @@ Item {
     applyTimer.command = command
     applyTimer.restart()
     closeTimer.restart()
+  }
+
+  function installGalleryItem(item, spec) {
+    spec = spec || {}
+    root.applying = true
+    root.applyIndex = root.selectedIndex
+    root.hideMenu()
+    root.statusText = "Installing " + (spec.label || item.label) + "…"
+    galleryApplyProc.command = [
+      "python3", root.applyGallery,
+      String(spec.slug || item.path || ""),
+      String(spec.base || (item.apply && item.apply.base) || ""),
+      String(spec.ct || ""),
+      String(spec.bg || ""),
+      String((item.apply && item.apply.fallback) || item.key || "")
+    ]
+    galleryApplyProc.running = true
   }
 
   function deleteContextTheme() {
@@ -318,24 +326,63 @@ Item {
     root.loadItems("themes")
   }
 
-  function openDeleteMenu(index, gx, gy) {
-    if (root.mode !== "themes")
+  function activateContext(index) {
+    var action = root.contextActions[index]
+    if (!action)
       return
+    if (action.kind === "delete") {
+      root.deleteContextTheme()
+      return
+    }
+    if (action.kind === "variant") {
+      var item = root.contextIndex >= 0 ? root.visibleItems[root.contextIndex] : root.currentItem()
+      if (!item)
+        return
+      root.installGalleryItem(item, {
+        slug: action.slug,
+        base: item.apply ? item.apply.base : "",
+        ct: action.ct,
+        bg: action.bg,
+        label: item.label + " · " + action.label
+      })
+    }
+  }
+
+  function openContextMenu(index, gx, gy) {
     if (index < 0 || index >= root.visibleItems.length)
       return
     var item = root.visibleItems[index]
-    if (!item || !item.removable)
+    if (!item)
+      return
+    var actions = []
+    if (root.mode === "themes" && item.removable)
+      actions.push({ kind: "delete", label: "Delete" })
+    if (root.mode === "gallery" && item.variants && item.variants.length) {
+      for (var i = 0; i < item.variants.length; i++) {
+        var v = item.variants[i]
+        actions.push({
+          kind: "variant",
+          label: v.label,
+          slug: v.slug,
+          ct: v.ct,
+          bg: v.bg
+        })
+      }
+    }
+    if (actions.length === 0)
       return
     root.selectedIndex = index
     root.contextIndex = index
-    contextMenu.x = Math.min(panel.width - contextMenu.width - 12, Math.max(12, gx))
-    contextMenu.y = Math.min(panel.height - contextMenu.height - 12, Math.max(12, gy))
+    root.contextActions = actions
+    contextMenu.x = Math.min(panel.width - 180, Math.max(12, gx))
+    contextMenu.y = Math.min(panel.height - (actions.length * 36 + 16), Math.max(12, gy))
     contextMenu.visible = true
   }
 
   function hideMenu() {
     contextMenu.visible = false
     root.contextIndex = -1
+    root.contextActions = []
   }
 
   function thumbPathFor(url) {
@@ -403,7 +450,7 @@ Item {
     if (root.filterText)
       return "filter: " + root.filterText + " · " + root.visibleItems.length
     if (root.mode === "gallery")
-      return "Tab to switch · Enter to install · Esc to close"
+      return "Tab to switch · Enter installs Palette · Right-click for Warm/Cool/Material/Aether"
     if (root.mode === "themes")
       return "Tab to switch · Enter to apply · Right-click to delete"
     return "Tab to switch · Enter to apply · Esc to close"
@@ -604,7 +651,7 @@ Item {
           event.accepted = true
         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
           if (contextMenu.visible)
-            root.deleteContextTheme()
+            root.activateContext(0)
           else
             root.applySelected()
           event.accepted = true
@@ -727,7 +774,7 @@ Item {
                 root.selectedIndex = itemIndex
             }
             onContextRequested: function(gx, gy) {
-              root.openDeleteMenu(itemIndex, gx, gy)
+              root.openContextMenu(itemIndex, gx, gy)
             }
           }
         }
@@ -761,28 +808,50 @@ Item {
     Rectangle {
       id: contextMenu
       visible: false
-      width: deleteLabel.implicitWidth + Style.space(28)
-      height: Style.space(36)
+      width: Style.space(168)
+      height: contextColumn.implicitHeight + Style.space(8)
       radius: Math.max(4, Style.cornerRadius)
       color: Color.menu.background
       border.width: 1
       border.color: Color.menu.border
       z: 200
 
-      Text {
-        id: deleteLabel
-        anchors.centerIn: parent
-        text: "Delete"
-        color: Color.menu.text
-        font.family: Style.font.menuFamily
-        font.pixelSize: Style.font.body
-      }
+      Column {
+        id: contextColumn
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: Style.space(4)
+        spacing: 0
 
-      MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.deleteContextTheme()
+        Repeater {
+          model: root.contextActions.length
+          Rectangle {
+            required property int index
+            width: contextColumn.width
+            height: Style.space(32)
+            radius: Math.max(3, Style.cornerRadius)
+            color: actionMouse.containsMouse ? Color.menu.selectedBackground : "transparent"
+
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              anchors.left: parent.left
+              anchors.leftMargin: Style.space(10)
+              text: root.contextActions[index] ? root.contextActions[index].label : ""
+              color: Color.menu.text
+              font.family: Style.font.menuFamily
+              font.pixelSize: Style.font.body
+            }
+
+            MouseArea {
+              id: actionMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.activateContext(index)
+            }
+          }
+        }
       }
     }
   }

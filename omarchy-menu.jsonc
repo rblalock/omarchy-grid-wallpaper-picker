@@ -1,0 +1,23 @@
+{
+  // Merge into ~/.config/omarchy/extensions/omarchy-menu.jsonc
+  "style.hex-picker": {
+    "icon": "󰔉",
+    "label": "Hex picker",
+    "aliases": ["hex", "honeycomb", "gallery"]
+  },
+  "style.hex-picker.themes": {
+    "icon": "󰸌",
+    "label": "Themes",
+    "action": "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"themes\"}'"
+  },
+  "style.hex-picker.backgrounds": {
+    "icon": "",
+    "label": "Backgrounds",
+    "action": "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"backgrounds\"}'"
+  },
+  "style.hex-picker.gallery": {
+    "icon": "󰋩",
+    "label": "Gallery",
+    "action": "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"gallery\"}'"
+  }
+}

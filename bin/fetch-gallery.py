@@ -21,7 +21,8 @@ CACHE_DIR = os.path.expanduser("~/.cache/omarchy/hex-picker")
 GALLERY = os.path.join(CACHE_DIR, "gallery.json")
 GOTAR = os.path.expanduser("~/.cache/gotar.omarchy-themes/manifest.json")
 TTL = 24 * 3600
-VARIANT_ORDER = ["palette", "aether", "material", "nord", "gruvbox"]
+VARIANT_ORDER = ["palette", "gruvbox", "nord", "material", "aether"]
+GALLERY_FORMAT = 2
 
 
 def fail(msg):
@@ -29,37 +30,38 @@ def fail(msg):
     sys.exit(1)
 
 
-def pick_variant(th):
+def variants_of(th):
     if not isinstance(th, dict):
-        return None
+        return []
+    out = []
     for key in VARIANT_ORDER:
         t = th.get(key)
-        if isinstance(t, dict) and _sec.safe_slug(t.get("n") or ""):
-            return t
-    for t in th.values():
-        if isinstance(t, dict) and _sec.safe_slug(t.get("n") or ""):
-            return t
-    return None
+        if not isinstance(t, dict):
+            continue
+        n = t.get("n") or ""
+        ct = t.get("ct") or ""
+        bg = t.get("bg") or ""
+        if not _sec.safe_slug(n) or not ct or not _sec.safe_relpath(ct):
+            continue
+        if bg and not _sec.safe_relpath(bg):
+            bg = ""
+        out.append({"k": key, "n": n, "ct": ct, "bg": bg})
+    return out
 
 
 def compact_entry(e):
     if not isinstance(e, dict):
         return None
-    variant = pick_variant(e.get("th"))
-    if not variant:
+    variants = variants_of(e.get("th"))
+    if not variants:
         return None
+    variant = variants[0]
     p = e.get("p") or ""
     if not _sec.safe_relpath(p):
         return None
     thumb = e.get("thumb") or e.get("med") or p
     if thumb and not _sec.safe_relpath(thumb):
         thumb = p
-    ct = variant.get("ct") or ""
-    bg = variant.get("bg") or ""
-    if not ct or not _sec.safe_relpath(ct):
-        return None
-    if bg and not _sec.safe_relpath(bg):
-        bg = ""
     tags = e.get("tags") if isinstance(e.get("tags"), list) else []
     tags = [t for t in tags if isinstance(t, str) and len(t) <= 128][:16]
     title = e.get("t") if isinstance(e.get("t"), str) and e.get("t") else p.rsplit("/", 1)[-1]
@@ -69,8 +71,9 @@ def compact_entry(e):
         "thumb": thumb,
         "tags": tags,
         "n": variant["n"],
-        "ct": ct,
-        "bg": bg,
+        "ct": variant["ct"],
+        "bg": variant["bg"],
+        "vs": variants,
     }
 
 
@@ -89,6 +92,7 @@ def compact_from_slim(slim):
         if item:
             out.append(item)
     return {
+        "format": GALLERY_FORMAT,
         "base": base.rstrip("/"),
         "fetchedAt": int(slim.get("fetchedAt") or time.time()),
         "count": len(out),
@@ -106,6 +110,8 @@ def load_json_file(path, max_bytes):
 
 def cache_fresh(obj):
     if not isinstance(obj, dict) or "entries" not in obj:
+        return False
+    if obj.get("format") != GALLERY_FORMAT:
         return False
     try:
         fetched = int(obj.get("fetchedAt", 0))
@@ -182,6 +188,7 @@ def fetch_from_source():
         if item:
             entries.append(item)
     return {
+        "format": GALLERY_FORMAT,
         "base": base,
         "fetchedAt": int(time.time()),
         "count": len(entries),

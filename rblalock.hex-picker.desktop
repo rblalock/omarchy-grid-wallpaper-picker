@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Hex picker
+Comment=Honeycomb picker for Omarchy themes, backgrounds, and gallery
+Exec=omarchy-shell shell summon rblalock.hex-picker '{"mode":"themes"}'
+Icon=preferences-desktop-theme
+Terminal=false
+StartupNotify=false
+Categories=Settings;DesktopSettings;
+Keywords=theme;wallpaper;omarchy;hex;gallery;

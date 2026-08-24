@@ -119,6 +119,14 @@ function matches(item, filterText) {
   return false
 }
 
+var VARIANT_LABEL = {
+  palette: "Palette",
+  gruvbox: "Warm",
+  nord: "Cool",
+  material: "Material",
+  aether: "Aether"
+}
+
 function parseGallery(obj) {
   if (!obj || !obj.entries)
     return []
@@ -130,6 +138,29 @@ function parseGallery(obj) {
       continue
     var thumbRel = e.thumb || e.p
     var tags = Array.isArray(e.tags) ? e.tags.join(" ") : ""
+    var variants = []
+    var vs = Array.isArray(e.vs) ? e.vs : []
+    for (var j = 0; j < vs.length; j++) {
+      var v = vs[j]
+      if (!v || !v.n || !v.ct)
+        continue
+      variants.push({
+        key: v.k || "",
+        label: VARIANT_LABEL[v.k] || v.k || v.n,
+        slug: v.n,
+        ct: v.ct,
+        bg: v.bg || ""
+      })
+    }
+    if (variants.length === 0) {
+      variants.push({
+        key: "palette",
+        label: "Palette",
+        slug: e.n,
+        ct: e.ct || "",
+        bg: e.bg || ""
+      })
+    }
     out.push({
       key: e.p || e.n,
       label: e.t || e.n,
@@ -139,6 +170,7 @@ function parseGallery(obj) {
       removable: false,
       gallery: true,
       hay: ((e.t || "") + " " + (e.p || "") + " " + tags).toLowerCase(),
+      variants: variants,
       apply: {
         slug: e.n,
         base: base,
