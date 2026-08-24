@@ -5,7 +5,7 @@ Honeycomb overlay for [Omarchy](https://omarchy.org/). Pick installed themes, th
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/rblalock/omarchy-hex-picker.git --enable
+omarchy plugin add https://github.com/rblalock/omarchy-grid-wallpaper-picker.git --enable
 ```
 
 Then make it launchable without a custom key (pick one or both):
