@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "rblalock.hex-picker",
+  "name": "Hex picker",
+  "version": "1.0.0",
+  "author": "rblalock",
+  "license": "MIT",
+  "description": "Honeycomb overlay for Omarchy themes, backgrounds, and a 3000+ theme gallery.",
+  "kinds": [
+    "overlay"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "HexPicker.qml"
+  }
+}

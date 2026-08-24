@@ -1,0 +1,8 @@
+*.qmlc
+*.jsc
+.DS_Store
+.idea/
+.vscode/
+*.swp
+__pycache__/
+*.pyc
