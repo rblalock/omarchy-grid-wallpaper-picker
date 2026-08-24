@@ -789,6 +789,19 @@ Item {
       readonly property var size: HexLayout.gridSize(count, columns, radius)
       readonly property int rowCount: Math.max(0, Math.ceil(count / Math.max(1, columns)))
       readonly property real xPad: Math.max(0, (width - size.width) / 2)
+      readonly property int edgePad: Math.round(radius * 0.22) + 10
+
+      displayMarginBeginning: edgePad
+      displayMarginEnd: edgePad
+
+      header: Item {
+        width: hexList.width
+        height: hexList.edgePad
+      }
+      footer: Item {
+        width: hexList.width
+        height: hexList.edgePad
+      }
 
       model: rowCount
 
