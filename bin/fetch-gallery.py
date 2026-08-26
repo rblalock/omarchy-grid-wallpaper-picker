@@ -4,8 +4,15 @@
 Source: https://bjarneo.github.io/omarchy-themes/wallpapers.js
 If gotar.omarchy-themes already cached a slim manifest, reuse it.
 
-Writes ~/.cache/omarchy/hex-picker/gallery.json
-Prints {"ok":true,"path":"...","count":N} (or {"ok":false,"error":"..."}).
+Writes ~/.cache/omarchy/hex-picker/gallery.json.
+
+Prints one JSON object per line, flushed:
+  {"ok":true,"path":"...","count":N,"stale":bool,"refreshed":bool}
+  {"ok":false,"error":"..."}
+
+A usable on-disk index is printed first (even if stale) so the overlay can
+paint immediately. A background fetch then rewrites the file and prints a
+second line with refreshed=true. The overlay watches the file for that write.
 """
 import json
 import os
@@ -157,10 +164,31 @@ def write_gallery(obj):
         raise
 
 
+def usable(obj):
+    return (
+        isinstance(obj, dict)
+        and obj.get("format") == GALLERY_FORMAT
+        and isinstance(obj.get("entries"), list)
+        and len(obj["entries"]) > 0
+    )
+
+
 def succeed(obj, persist=True):
     if persist:
         write_gallery(obj)
-    print(json.dumps({"ok": True, "path": GALLERY, "count": obj["count"]}, separators=(",", ":")))
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "path": GALLERY,
+                "count": obj["count"],
+                "stale": not cache_fresh(obj),
+                "refreshed": persist,
+            },
+            separators=(",", ":"),
+        ),
+        flush=True,
+    )
 
 
 def fetch_from_source():
@@ -224,23 +252,28 @@ def fetch_from_source():
 def main():
     force = "--force" in sys.argv[1:]
     cached = load_json_file(GALLERY, _sec.BYTE_LIMIT_MANIFEST)
-    if not force and cache_fresh(cached):
-        succeed(cached, persist=False)
-        return
+    has_cache = usable(cached)
 
-    gotar = load_json_file(GOTAR, _sec.BYTE_LIMIT_MANIFEST)
-    if not force and cache_fresh(gotar):
-        try:
-            succeed(compact_from_slim(gotar))
+    # Serve whatever we have immediately so the overlay never waits on the
+    # 35MB index download. A stale file is still a usable gallery.
+    if has_cache:
+        succeed(cached, persist=False)
+        if not force and cache_fresh(cached):
             return
-        except Exception:
-            pass
+
+    if not force:
+        gotar = load_json_file(GOTAR, _sec.BYTE_LIMIT_MANIFEST)
+        if cache_fresh(gotar):
+            try:
+                succeed(compact_from_slim(gotar))
+                return
+            except Exception:
+                pass
 
     try:
         succeed(fetch_from_source())
     except Exception as ex:
-        if cached and isinstance(cached.get("entries"), list):
-            succeed(cached)
+        if has_cache:
             return
         fail(ex)
 

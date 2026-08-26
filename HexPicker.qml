@@ -29,15 +29,18 @@ Item {
   property int flippedIndex: -1
   property int paletteIndex: 0
   property int thumbRev: 0
+  property int galleryFetchedAt: 0
   property var thumbOnDisk: ({})
   property var thumbQueue: []
   property var thumbMarkBuf: []
   property bool thumbBusy: false
-  readonly property string thumbCacheDir: {
+  readonly property string cacheDir: {
     var home = Quickshell.env("HOME")
     var xdg = Quickshell.env("XDG_CACHE_HOME")
-    return (xdg && xdg.length ? xdg : (home + "/.cache")) + "/omarchy/hex-picker/net"
+    return (xdg && xdg.length ? xdg : (home + "/.cache")) + "/omarchy/hex-picker"
   }
+  readonly property string thumbCacheDir: cacheDir + "/net"
+  readonly property string galleryCachePath: cacheDir + "/gallery.json"
   property var items: []
   property var visibleItems: []
   property var cachedThemes: []
@@ -209,13 +212,34 @@ Item {
   }
 
   function applyGalleryObject(obj) {
+    if (!obj || !obj.entries)
+      return
+    var fetched = 0
+    try { fetched = obj.fetchedAt || 0 } catch (e) { fetched = 0 }
     var rows = HexLayout.parseGallery(obj)
+    if (rows.length === 0)
+      return
+    if (fetched && fetched === root.galleryFetchedAt && root.cachedGallery.length === rows.length)
+      return
+
+    var hadItems = root.cachedGallery.length > 0
+    var flippedKey = ""
+    if (root.flippedIndex >= 0 && root.flippedIndex < root.visibleItems.length)
+      flippedKey = root.visibleItems[root.flippedIndex].key
+
+    root.galleryFetchedAt = fetched
     root.cachedGallery = rows
     if (root.mode !== "gallery")
       return
+
     root.items = rows
-    root.statusText = ""
-    root.rebuildVisible()
+    if (root.statusText === "Fetching gallery…")
+      root.statusText = ""
+    root.rebuildVisible(!(hadItems && !root.waveOnLoad))
+    if (flippedKey) {
+      var fi = HexLayout.indexOfKey(root.visibleItems, flippedKey)
+      root.flippedIndex = (root.visibleItems[fi] && root.visibleItems[fi].key === flippedKey) ? fi : -1
+    }
     if (root.waveOnLoad && root.opened) {
       root.waveOrigin = root.selectedIndex
       root.wave += 1
@@ -231,14 +255,15 @@ Item {
       root.loadItems("themes")
   }
 
-  function rebuildVisible() {
+  function rebuildVisible(center) {
     var next = HexLayout.filterItems(root.items, root.filterText)
     var previousKey = ""
     if (root.visibleItems.length > 0 && root.selectedIndex >= 0 && root.selectedIndex < root.visibleItems.length)
       previousKey = root.visibleItems[root.selectedIndex].key
     root.visibleItems = next
     root.selectedIndex = HexLayout.indexOfKey(next, previousKey)
-    Qt.callLater(root.centerOnSelected)
+    if (center !== false)
+      Qt.callLater(root.centerOnSelected)
   }
 
   function setFilter(next) {
@@ -518,18 +543,19 @@ Item {
 
   Process {
     id: galleryProc
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: {
+    stdout: SplitParser {
+      onRead: function(line) {
         var payload = {}
-        try { payload = JSON.parse(String(text || "") || "{}") } catch (e) { payload = {} }
+        try { payload = JSON.parse(String(line || "") || "{}") } catch (e) { return }
         if (!payload.ok) {
-          root.statusText = payload.error ? String(payload.error) : "Gallery fetch failed"
-          root.waveOnLoad = false
+          if (root.cachedGallery.length === 0) {
+            root.statusText = payload.error ? String(payload.error) : "Gallery fetch failed"
+            root.waveOnLoad = false
+          }
           return
         }
-        if (payload.path)
-          galleryFile.path = payload.path
+        if (payload.refreshed)
+          galleryFile.reload()
       }
     }
     onExited: function(code) {
@@ -569,14 +595,19 @@ Item {
 
   FileView {
     id: galleryFile
+    path: root.galleryCachePath
     watchChanges: true
+    atomicWrites: true
+    printErrors: false
     onLoaded: {
       try {
         root.applyGalleryObject(JSON.parse(text() || "{}"))
       } catch (e) {
-        root.statusText = "Could not read gallery index"
+        if (root.cachedGallery.length === 0)
+          root.statusText = "Could not read gallery index"
       }
     }
+    onFileChanged: reload()
   }
 
   Process {

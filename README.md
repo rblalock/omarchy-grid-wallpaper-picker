@@ -62,6 +62,8 @@ rm -f ~/.local/share/applications/rblalock.hex-picker.desktop
 
 Gallery-installed themes stay until `omarchy theme remove <slug>`. Cache: `rm -rf ~/.cache/omarchy/hex-picker`.
 
+The gallery grid opens from `~/.cache/omarchy/hex-picker/gallery.json` immediately. If that index is older than 24 hours, a refresh runs in the background and the grid updates in place.
+
 ## Validate
 
 ```sh
