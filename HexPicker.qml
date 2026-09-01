@@ -30,6 +30,7 @@ Item {
   property int paletteIndex: 0
   property int thumbRev: 0
   property int galleryFetchedAt: 0
+  property bool thumbIndexDone: false
   property var thumbOnDisk: ({})
   property var thumbQueue: []
   property var thumbMarkBuf: []
@@ -141,8 +142,8 @@ Item {
     }
 
     root.loadItems(nextMode)
-    if (nextMode === "gallery")
-      root.startPrefetch()
+    root.loadGallery()
+    root.maybePrefetchGallery()
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
@@ -229,8 +230,10 @@ Item {
 
     root.galleryFetchedAt = fetched
     root.cachedGallery = rows
-    if (root.mode !== "gallery")
+    if (root.mode !== "gallery") {
+      root.maybePrefetchGallery()
       return
+    }
 
     root.items = rows
     if (root.statusText === "Fetching gallery…")
@@ -492,6 +495,24 @@ Item {
     root.thumbRev += 1
   }
 
+  function hasLocalThumbs() {
+    for (var k in root.thumbOnDisk)
+      return true
+    return false
+  }
+
+  function maybePrefetchGallery() {
+    if (prefetchProc.running || root.cachedGallery.length === 0)
+      return
+    if (root.mode === "gallery") {
+      root.startPrefetch()
+      return
+    }
+    if (!root.opened || !root.thumbIndexDone || root.hasLocalThumbs())
+      return
+    root.startPrefetch()
+  }
+
   function startPrefetch() {
     if (!root.pluginDir || prefetchProc.running)
       return
@@ -548,7 +569,7 @@ Item {
         var payload = {}
         try { payload = JSON.parse(String(line || "") || "{}") } catch (e) { return }
         if (!payload.ok) {
-          if (root.cachedGallery.length === 0) {
+          if (root.mode === "gallery" && root.cachedGallery.length === 0) {
             root.statusText = payload.error ? String(payload.error) : "Gallery fetch failed"
             root.waveOnLoad = false
           }
@@ -603,7 +624,7 @@ Item {
       try {
         root.applyGalleryObject(JSON.parse(text() || "{}"))
       } catch (e) {
-        if (root.cachedGallery.length === 0)
+        if (root.mode === "gallery" && root.cachedGallery.length === 0)
           root.statusText = "Could not read gallery index"
       }
     }
@@ -637,6 +658,8 @@ Item {
             root.thumbOnDisk[lines[i]] = true
         }
         root.thumbRev += 1
+        root.thumbIndexDone = true
+        root.maybePrefetchGallery()
       }
     }
   }
