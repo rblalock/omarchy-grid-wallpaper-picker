@@ -2,6 +2,10 @@
 
 Honeycomb overlay for [Omarchy](https://omarchy.org/). Pick installed themes, the current theme’s backgrounds, or install from the [bjarneo/omarchy-themes](https://bjarneo.github.io/omarchy-themes/) gallery.
 
+![Hex picker gallery](preview.png)
+
+Demo: [hex picker on X](https://x.com/rblalock/status/2094399974675034339)
+
 ## Install
 
 ```sh
@@ -28,6 +32,16 @@ hl.layer_rule({ match = { namespace = "^omarchy-hex-picker$" }, no_anim = true, 
 ```sh
 omarchy-shell shell rescanPlugins
 ```
+
+## Dependencies
+
+Omarchy already ships these on a normal install:
+
+- `python3` — gallery index, apply, and thumb prefetch
+- `curl` — gallery thumb helper
+- `vipsthumbnail` (libvips) — local theme and background thumbs
+
+The gallery talks to `https://bjarneo.github.io` (catalog) and `https://wallpapers.hel1.your-objectstorage.com` (media). Downloads are HTTPS-only, host-allowlisted, and byte-capped. Applying a gallery item writes a user theme under `~/.config/omarchy/themes/<slug>/` only after you pick it. The plugin never uses `sudo`.
 
 ## Usage
 
