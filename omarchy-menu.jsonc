@@ -1,23 +1,23 @@
 {
   // Merge into ~/.config/omarchy/extensions/omarchy-menu.jsonc
-  "style.hex-picker": {
+  "style.grid-wallpaper-picker": {
     "icon": "󰔉",
-    "label": "Hex picker",
-    "aliases": ["hex", "honeycomb", "gallery"]
+    "label": "Grid wallpaper picker",
+    "aliases": ["hex", "honeycomb", "gallery", "wallpaper"]
   },
-  "style.hex-picker.themes": {
+  "style.grid-wallpaper-picker.themes": {
     "icon": "󰸌",
     "label": "Themes",
-    "action": "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"themes\"}'"
+    "action": "omarchy-shell shell summon rblalock.grid-wallpaper-picker '{\"mode\":\"themes\"}'"
   },
-  "style.hex-picker.backgrounds": {
+  "style.grid-wallpaper-picker.backgrounds": {
     "icon": "",
     "label": "Backgrounds",
-    "action": "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"backgrounds\"}'"
+    "action": "omarchy-shell shell summon rblalock.grid-wallpaper-picker '{\"mode\":\"backgrounds\"}'"
   },
-  "style.hex-picker.gallery": {
+  "style.grid-wallpaper-picker.gallery": {
     "icon": "󰋩",
     "label": "Gallery",
-    "action": "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"gallery\"}'"
+    "action": "omarchy-shell shell summon rblalock.grid-wallpaper-picker '{\"mode\":\"gallery\"}'"
   }
 }

@@ -2,7 +2,7 @@
 # Enumerate Omarchy themes or backgrounds as TSV:
 #   key <tab> label <tab> apply-path <tab> thumbnail <tab> current(0|1)
 #
-# Thumbnails are vipsthumbnail crops in ~/.cache/omarchy/hex-picker, keyed by
+# Thumbnails are vipsthumbnail crops in ~/.cache/omarchy/grid-wallpaper-picker, keyed by
 # path+mtime+size so a 35MB wallpaper is not decoded by Qt on every open.
 
 set -euo pipefail
@@ -12,7 +12,7 @@ USER_THEMES="$HOME/.config/omarchy/themes"
 STOCK_THEMES="${OMARCHY_PATH:-/usr/share/omarchy}/themes"
 CURRENT_NAME="$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null || true)"
 CURRENT_BG="$(readlink -f "$HOME/.local/state/omarchy/current/background" 2>/dev/null || true)"
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/omarchy/hex-picker"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/omarchy/grid-wallpaper-picker"
 INDEX_FILE="$CACHE_DIR/index.tsv"
 PENDING="$CACHE_DIR/pending.$$"
 

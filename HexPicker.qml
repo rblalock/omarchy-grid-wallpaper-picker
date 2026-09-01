@@ -37,7 +37,7 @@ Item {
   readonly property string cacheDir: {
     var home = Quickshell.env("HOME")
     var xdg = Quickshell.env("XDG_CACHE_HOME")
-    return (xdg && xdg.length ? xdg : (home + "/.cache")) + "/omarchy/hex-picker"
+    return (xdg && xdg.length ? xdg : (home + "/.cache")) + "/omarchy/grid-wallpaper-picker"
   }
   readonly property string thumbCacheDir: cacheDir + "/net"
   readonly property string galleryCachePath: cacheDir + "/gallery.json"
@@ -161,7 +161,7 @@ Item {
     root.hideMenu()
     root.unflip()
     if (root.shell && typeof root.shell.hide === "function")
-      root.shell.hide((root.manifest && root.manifest.id) || "rblalock.hex-picker")
+      root.shell.hide((root.manifest && root.manifest.id) || "rblalock.grid-wallpaper-picker")
   }
 
   function toggle() {
@@ -677,7 +677,7 @@ Item {
     visible: root.opened || scrim.opacity > 0.01
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
-    WlrLayershell.namespace: "omarchy-hex-picker"
+    WlrLayershell.namespace: "omarchy-grid-wallpaper-picker"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore

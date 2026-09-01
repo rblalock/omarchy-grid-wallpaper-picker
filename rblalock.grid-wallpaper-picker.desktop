@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Grid wallpaper picker
+Comment=Grid wallpaper picker for Omarchy themes, backgrounds, and gallery
+Exec=omarchy-shell shell summon rblalock.grid-wallpaper-picker '{"mode":"themes"}'
+Icon=preferences-desktop-theme
+Terminal=false
+StartupNotify=false
+Categories=Settings;DesktopSettings;
+Keywords=theme;wallpaper;omarchy;grid;gallery;

@@ -1,4 +1,0 @@
-#!/bin/bash
-# Summon the hex overlay. Usage: hex-picker [themes|backgrounds]
-mode="${1:-themes}"
-exec omarchy-shell shell summon rblalock.hex-picker "{\"mode\":\"$mode\"}"

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Summon the overlay. Usage: grid-wallpaper-picker [themes|backgrounds|gallery]
+mode="${1:-themes}"
+exec omarchy-shell shell summon rblalock.grid-wallpaper-picker "{\"mode\":\"$mode\"}"

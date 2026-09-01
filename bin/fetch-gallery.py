@@ -4,7 +4,7 @@
 Source: https://bjarneo.github.io/omarchy-themes/wallpapers.js
 If gotar.omarchy-themes already cached a slim manifest, reuse it.
 
-Writes ~/.cache/omarchy/hex-picker/gallery.json.
+Writes ~/.cache/omarchy/grid-wallpaper-picker/gallery.json.
 
 Prints one JSON object per line, flushed:
   {"ok":true,"path":"...","count":N,"stale":bool,"refreshed":bool}
@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _sec
 
 SOURCE = "https://bjarneo.github.io/omarchy-themes/wallpapers.js"
-CACHE_DIR = os.path.expanduser("~/.cache/omarchy/hex-picker")
+CACHE_DIR = os.path.expanduser("~/.cache/omarchy/grid-wallpaper-picker")
 GALLERY = os.path.join(CACHE_DIR, "gallery.json")
 GOTAR = os.path.expanduser("~/.cache/gotar.omarchy-themes/manifest.json")
 TTL = 24 * 3600

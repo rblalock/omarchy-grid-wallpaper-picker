@@ -21,7 +21,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-UA = {"User-Agent": "omarchy-hex-picker/0.2 (+omarchy shell)"}
+UA = {"User-Agent": "omarchy-grid-wallpaper-picker/0.2 (+omarchy shell)"}
 
 ALLOWED_HOSTS = ("wallpapers.hel1.your-objectstorage.com", "bjarneo.github.io")
 ALLOWED_SCHEMES = ("https",)

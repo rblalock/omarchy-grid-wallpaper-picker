@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download gallery thumbs in parallel into ~/.cache/omarchy/hex-picker/net/.
+"""Download gallery thumbs in parallel into ~/.cache/omarchy/grid-wallpaper-picker/net/.
 
 Prints each absolute dest path as soon as it is on disk (already cached or
 just fetched) so the overlay can reveal hexes incrementally.
@@ -15,8 +15,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _sec
 
-GALLERY = os.path.expanduser("~/.cache/omarchy/hex-picker/gallery.json")
-CACHE_NET = os.path.expanduser("~/.cache/omarchy/hex-picker/net")
+GALLERY = os.path.expanduser("~/.cache/omarchy/grid-wallpaper-picker/gallery.json")
+CACHE_NET = os.path.expanduser("~/.cache/omarchy/grid-wallpaper-picker/net")
 JOBS = 24
 
 

@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "rblalock.hex-picker",
-  "name": "Hex picker",
+  "id": "rblalock.grid-wallpaper-picker",
+  "name": "Grid wallpaper picker",
   "version": "1.0.0",
   "author": "rblalock",
   "license": "MIT",
-  "description": "Honeycomb overlay for Omarchy themes, backgrounds, and a 3000+ theme gallery.",
+  "description": "Grid wallpaper picker for Omarchy themes, backgrounds, and a 3000+ theme gallery.",
   "kinds": [
     "overlay"
   ],

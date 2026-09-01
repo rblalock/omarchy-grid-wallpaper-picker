@@ -1,10 +1,10 @@
-# Hex picker
+# Grid wallpaper picker
 
-Honeycomb overlay for [Omarchy](https://omarchy.org/). Pick installed themes, the current theme’s backgrounds, or install from the [bjarneo/omarchy-themes](https://bjarneo.github.io/omarchy-themes/) gallery.
+Grid wallpaper picker for [Omarchy](https://omarchy.org/). Pick installed themes, the current theme’s backgrounds, or install from the [bjarneo/omarchy-themes](https://bjarneo.github.io/omarchy-themes/) gallery.
 
-![Hex picker gallery](preview.png)
+![Grid wallpaper picker gallery](preview.png)
 
-Demo: [hex picker on X](https://x.com/rblalock/status/2094399974675034339)
+Demo: [grid wallpaper picker on X](https://x.com/rblalock/status/2094399974675034339)
 
 ## Install
 
@@ -15,18 +15,18 @@ omarchy plugin add https://github.com/rblalock/omarchy-grid-wallpaper-picker.git
 Then make it launchable without a custom key (pick one or both):
 
 ```sh
-PLUGIN="$HOME/.config/omarchy/plugins/rblalock.hex-picker"
-cp "$PLUGIN/rblalock.hex-picker.desktop" ~/.local/share/applications/
+PLUGIN="$HOME/.config/omarchy/plugins/rblalock.grid-wallpaper-picker"
+cp "$PLUGIN/rblalock.grid-wallpaper-picker.desktop" ~/.local/share/applications/
 ```
 
-Search **Hex picker** in the Omarchy app launcher. To also put it under Style in the Omarchy menu, merge `omarchy-menu.jsonc` from the plugin into `~/.config/omarchy/extensions/omarchy-menu.jsonc`.
+Search **Grid wallpaper picker** in the Omarchy app launcher. To also put it under Style in the Omarchy menu, merge `omarchy-menu.jsonc` from the plugin into `~/.config/omarchy/extensions/omarchy-menu.jsonc`.
 
 Optional keybinds in `~/.config/hypr/bindings.lua`:
 
 ```lua
-o.bind("SUPER + ALT + T", "Hex theme picker", "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"themes\"}'")
-o.bind("SUPER + ALT + B", "Hex background picker", "omarchy-shell shell summon rblalock.hex-picker '{\"mode\":\"backgrounds\"}'")
-hl.layer_rule({ match = { namespace = "^omarchy-hex-picker$" }, no_anim = true, animation = "none" })
+o.bind("SUPER + ALT + T", "Grid wallpaper picker", "omarchy-shell shell summon rblalock.grid-wallpaper-picker '{\"mode\":\"themes\"}'")
+o.bind("SUPER + ALT + B", "Grid background picker", "omarchy-shell shell summon rblalock.grid-wallpaper-picker '{\"mode\":\"backgrounds\"}'")
+hl.layer_rule({ match = { namespace = "^omarchy-grid-wallpaper-picker$" }, no_anim = true, animation = "none" })
 ```
 
 ```sh
@@ -48,12 +48,12 @@ The gallery talks to `https://bjarneo.github.io` (catalog) and `https://wallpape
 Summon:
 
 ```sh
-omarchy-shell shell summon rblalock.hex-picker '{"mode":"themes"}'
+omarchy-shell shell summon rblalock.grid-wallpaper-picker '{"mode":"themes"}'
 ```
 
 | Input | Action |
 | --- | --- |
-| App launcher / Style → Hex picker | Open |
+| App launcher / Style → Grid wallpaper picker | Open |
 | `Tab` | Themes → Backgrounds → Gallery |
 | Type | Filter |
 | `Enter` | Apply. In Gallery: first Enter flips the hex (Palette selected), second Enter installs |
@@ -70,13 +70,13 @@ Installed gallery items become normal user themes under `~/.config/omarchy/theme
 ## Remove
 
 ```sh
-omarchy plugin remove rblalock.hex-picker --yes
-rm -f ~/.local/share/applications/rblalock.hex-picker.desktop
+omarchy plugin remove rblalock.grid-wallpaper-picker --yes
+rm -f ~/.local/share/applications/rblalock.grid-wallpaper-picker.desktop
 ```
 
-Gallery-installed themes stay until `omarchy theme remove <slug>`. Cache: `rm -rf ~/.cache/omarchy/hex-picker`.
+Gallery-installed themes stay until `omarchy theme remove <slug>`. Cache: `rm -rf ~/.cache/omarchy/grid-wallpaper-picker`.
 
-The gallery grid opens from `~/.cache/omarchy/hex-picker/gallery.json` immediately. If that index is older than 24 hours, a refresh runs in the background and the grid updates in place.
+The gallery grid opens from `~/.cache/omarchy/grid-wallpaper-picker/gallery.json` immediately. If that index is older than 24 hours, a refresh runs in the background and the grid updates in place.
 
 ## Validate
 
