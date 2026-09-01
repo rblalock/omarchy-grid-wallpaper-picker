@@ -101,7 +101,7 @@ find_preview() {
 }
 
 theme_signature() {
-  printf 'v3\ncurrent:%s\n' "$CURRENT_NAME"
+  printf 'v4\ncache:%s\ncurrent:%s\n' "$CACHE_DIR" "$CURRENT_NAME"
   [[ -d $USER_THEMES ]] && stat -Lc 'user:%Y' "$USER_THEMES"
   [[ -d $STOCK_THEMES ]] && stat -Lc 'stock:%Y' "$STOCK_THEMES"
   local d
@@ -112,7 +112,7 @@ theme_signature() {
 }
 
 background_signature() {
-  printf 'v2\ncurrent:%s\nbg:%s\n' "$CURRENT_NAME" "$CURRENT_BG"
+  printf 'v4\ncache:%s\ncurrent:%s\nbg:%s\n' "$CACHE_DIR" "$CURRENT_NAME" "$CURRENT_BG"
   local dir
   for dir in \
     "$HOME/.config/omarchy/backgrounds/$CURRENT_NAME" \
@@ -125,8 +125,14 @@ cached_rows() {
   local sigfile="$CACHE_DIR/$mode.sig"
   local rowsfile="$CACHE_DIR/$mode.rows"
   local sig="$1"
+  local thumb
   [[ -f $sigfile && -f $rowsfile ]] || return 1
   cmp -s "$sigfile" <(printf '%s' "$sig") || return 1
+  # Absolute thumb paths go stale if the cache directory is renamed.
+  thumb=$(awk -F '\t' 'NF >= 4 && $4 != "" { print $4; exit }' "$rowsfile")
+  if [[ -n $thumb && ! -e $thumb ]]; then
+    return 1
+  fi
   cat "$rowsfile"
 }
 

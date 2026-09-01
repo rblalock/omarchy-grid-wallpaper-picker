@@ -193,7 +193,7 @@ Item {
       return
     if (galleryProc.running)
       return
-    galleryProc.command = ["python3", root.fetchGallery]
+    galleryProc.command = ["python3", "-B", root.fetchGallery]
     galleryProc.running = true
   }
 
@@ -375,7 +375,7 @@ Item {
     root.hideMenu()
     root.statusText = "Installing " + (spec.label || item.label) + "…"
     galleryApplyProc.command = [
-      "python3", root.applyGallery,
+      "python3", "-B", root.applyGallery,
       String(spec.slug || item.path || ""),
       String(spec.base || (item.apply && item.apply.base) || ""),
       String(spec.ct || ""),
@@ -495,7 +495,7 @@ Item {
   function startPrefetch() {
     if (!root.pluginDir || prefetchProc.running)
       return
-    prefetchProc.command = ["python3", root.pluginDir + "/bin/prefetch-thumbs.py"]
+    prefetchProc.command = ["python3", "-B", root.pluginDir + "/bin/prefetch-thumbs.py"]
     prefetchProc.running = true
   }
 
