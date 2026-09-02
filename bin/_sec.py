@@ -13,6 +13,7 @@ import json
 import os
 import re
 import signal
+import subprocess
 import sys
 import threading
 import time
@@ -185,6 +186,47 @@ def http_get(url, max_bytes, total_seconds=300, alarm=True):
         with _hard_deadline(total_seconds):
             return _read()
     return _read()
+
+
+def http_get_bounded(url, max_bytes, total_seconds=20):
+    """Allowlisted https GET with a killable whole-operation deadline.
+
+    Uses curl --max-time (DNS/connect/headers/body) and a subprocess timeout
+    that SIGKILLs and reaps the child. Redirects are refused. For worker
+    threads that cannot use SIGALRM.
+    """
+    if not is_allowed_url(url):
+        raise ValueError("URL not on allowlist: %r" % url[:120])
+    if not isinstance(total_seconds, (int, float)) or isinstance(total_seconds, bool) or total_seconds <= 0:
+        raise ValueError("deadline must be a positive number")
+    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes <= 0:
+        raise ValueError("max_bytes must be a positive int")
+    cmd = [
+        "curl", "-fsS",
+        "-L", "--max-redirs", "0",
+        "--max-time", "%.3f" % total_seconds,
+        "--retry", "0",
+        "--max-filesize", str(max_bytes),
+        "--proto", "=https",
+        "-A", UA["User-Agent"],
+        "--", url,
+    ]
+    try:
+        proc = subprocess.run(
+            cmd,
+            check=False,
+            capture_output=True,
+            timeout=total_seconds + 2,
+        )
+    except subprocess.TimeoutExpired as ex:
+        raise TimeoutError("download exceeded %g s" % total_seconds) from ex
+    if proc.returncode != 0:
+        err = (proc.stderr or b"").decode("utf-8", "replace").strip()[:200]
+        raise ValueError("download failed: %s" % (err or "curl exit %d" % proc.returncode))
+    data = proc.stdout or b""
+    if len(data) > max_bytes:
+        raise ValueError("download exceeded %d bytes" % max_bytes)
+    return data
 
 
 def read_file_capped(path, max_bytes):

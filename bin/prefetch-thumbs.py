@@ -5,8 +5,8 @@ Prints each absolute dest path as soon as it is on disk (already cached or
 just fetched) so the overlay can reveal hexes incrementally.
 
 Helsinki TTFB is ~0.5s; many workers beat Qt's Image HTTPS loader.
-Downloads go through _sec.http_get (no redirects, final host check, byte cap)
-and sniff_image before a file is trusted.
+Downloads go through _sec.http_get_bounded (curl --max-time, no redirects,
+byte cap) and sniff_image before a file is trusted.
 """
 import json
 import os
@@ -46,7 +46,7 @@ def fetch_one(url, dest):
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     tmp = dest + ".%d.tmp" % os.getpid()
     try:
-        data = _sec.http_get(url, _sec.BYTE_LIMIT_MEDIA, total_seconds=FETCH_SECONDS, alarm=False)
+        data = _sec.http_get_bounded(url, _sec.BYTE_LIMIT_MEDIA, total_seconds=FETCH_SECONDS)
         _sec.sniff_image(data)
         with open(tmp, "wb") as f:
             f.write(data)
