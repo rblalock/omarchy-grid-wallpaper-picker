@@ -41,7 +41,7 @@ Omarchy already ships these on a normal install:
 - `curl` — gallery thumb helper
 - `vipsthumbnail` (libvips) — local theme and background thumbs
 
-The gallery talks to `https://bjarneo.github.io` (catalog) and `https://wallpapers.hel1.your-objectstorage.com` (media). Downloads are HTTPS-only, host-allowlisted, and byte-capped. Applying a gallery item writes a user theme under `~/.config/omarchy/themes/<slug>/` only after you pick it. The plugin never uses `sudo`.
+The gallery talks to `https://bjarneo.github.io` (catalog) and `https://wallpapers.hel1.your-objectstorage.com` (media). Downloads are HTTPS-only, host-allowlisted, and byte-capped. Applying a gallery item writes a user theme under `~/.config/omarchy/themes/<slug>/` only after you pick it. Everything runs as your user.
 
 ## Usage
 
