@@ -5,11 +5,12 @@ Prints each absolute dest path as soon as it is on disk (already cached or
 just fetched) so the overlay can reveal hexes incrementally.
 
 Helsinki TTFB is ~0.5s; many workers beat Qt's Image HTTPS loader.
+Downloads go through _sec.http_get (no redirects, final host check, byte cap)
+and sniff_image before a file is trusted.
 """
 import json
 import os
 import sys
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -18,6 +19,7 @@ import _sec
 GALLERY = os.path.expanduser("~/.cache/omarchy/grid-wallpaper-picker/gallery.json")
 CACHE_NET = os.path.expanduser("~/.cache/omarchy/grid-wallpaper-picker/net")
 JOBS = 24
+FETCH_SECONDS = 20
 
 
 def dest_for(base, rel):
@@ -27,22 +29,31 @@ def dest_for(base, rel):
     return url, os.path.join(CACHE_NET, path)
 
 
+def cached_ok(dest):
+    return _sec.sniff_image_file(dest)
+
+
 def fetch_one(url, dest):
-    if os.path.isfile(dest) and os.path.getsize(dest) > 32:
+    if cached_ok(dest):
         return dest, True
+    if os.path.lexists(dest):
+        try:
+            os.unlink(dest)
+        except OSError:
+            return dest, False
     if not _sec.is_allowed_url(url):
         return dest, False
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     tmp = dest + ".%d.tmp" % os.getpid()
     try:
-        req = urllib.request.Request(url, headers=_sec.UA)
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            data = resp.read(_sec.BYTE_LIMIT_MEDIA + 1)
-        if not data or len(data) > _sec.BYTE_LIMIT_MEDIA:
-            return dest, False
+        data = _sec.http_get(url, _sec.BYTE_LIMIT_MEDIA, total_seconds=FETCH_SECONDS, alarm=False)
+        _sec.sniff_image(data)
         with open(tmp, "wb") as f:
             f.write(data)
         os.replace(tmp, dest)
+        if not cached_ok(dest):
+            os.unlink(dest)
+            return dest, False
         return dest, False
     except Exception:
         try:
@@ -71,9 +82,14 @@ def main():
         if not rel or not _sec.safe_relpath(rel):
             continue
         url, dest = dest_for(base, rel)
-        if os.path.isfile(dest) and os.path.getsize(dest) > 32:
+        if cached_ok(dest):
             print(dest, flush=True)
             continue
+        if os.path.lexists(dest):
+            try:
+                os.unlink(dest)
+            except OSError:
+                continue
         jobs.append((url, dest))
 
     if not jobs:
@@ -83,7 +99,7 @@ def main():
         futs = [pool.submit(fetch_one, url, dest) for url, dest in jobs]
         for fut in as_completed(futs):
             dest, existed = fut.result()
-            if dest and os.path.isfile(dest):
+            if dest and cached_ok(dest):
                 print(dest, flush=True)
 
 

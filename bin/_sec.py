@@ -147,22 +147,25 @@ def _hard_deadline(seconds):
                              old_timer[1])
 
 
-def http_get(url, max_bytes, total_seconds=300):
+def http_get(url, max_bytes, total_seconds=300, alarm=True):
     """Streaming https GET with a hard byte ceiling, host allowlist and deadline.
 
-    Redirects are blocked, and SIGALRM bounds the whole blocking open/read
-    sequence—not merely the gaps between socket operations.
+    Redirects are blocked. The final response URL is always re-checked against
+    the allowlist. SIGALRM bounds the whole open/read sequence on the main
+    thread; worker threads pass alarm=False and still get socket + monotonic
+    timeouts.
     """
     if not is_allowed_url(url):
         raise ValueError("URL not on allowlist: %r" % url[:120])
     req = urllib.request.Request(url, headers=UA)
     opener = urllib.request.build_opener(_NoRedirect())
     started = time.monotonic()
-    with _hard_deadline(total_seconds):
-        with opener.open(req, timeout=min(120, max(1, total_seconds))) as resp:
-            # Defense-in-depth: if a redirect slipped through, re-validate.
-            final = getattr(resp, "url", url)
-            if final != url and not is_allowed_url(final):
+    sock_timeout = min(120, max(1, total_seconds))
+
+    def _read():
+        with opener.open(req, timeout=sock_timeout) as resp:
+            final = getattr(resp, "url", url) or url
+            if not is_allowed_url(final):
                 raise ValueError("redirect target not on allowlist: %r" % final[:120])
             total = 0
             out = bytearray()
@@ -177,6 +180,11 @@ def http_get(url, max_bytes, total_seconds=300):
                     raise ValueError("download exceeded %d bytes" % max_bytes)
                 out += chunk
             return bytes(out)
+
+    if alarm:
+        with _hard_deadline(total_seconds):
+            return _read()
+    return _read()
 
 
 def read_file_capped(path, max_bytes):
@@ -231,6 +239,22 @@ def sniff_image(data, what="media"):
         if major == b"mif1" and (b"avif" in data[8:24] or b"avis" in data[8:24]):
             return "avif"
     raise ValueError("%s is not a recognized image (magic %r)" % (what, data[:16]))
+
+
+def sniff_image_file(path, max_bytes=BYTE_LIMIT_MEDIA):
+    """True if path is a regular (non-symlink) file with a recognized image header."""
+    try:
+        if not os.path.isfile(path) or os.path.islink(path):
+            return False
+        size = os.path.getsize(path)
+        if size < 8 or size > max_bytes:
+            return False
+        with open(path, "rb") as f:
+            head = f.read(32)
+        sniff_image(head)
+        return True
+    except Exception:
+        return False
 
 
 def validate_toml(data, what="colors.toml"):
