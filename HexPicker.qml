@@ -49,7 +49,15 @@ Item {
   property var cachedGallery: []
 
   readonly property string pluginDir: {
+    // Omarchy 4 strips __sourceDir from the injected third-party manifest.
     var dir = manifest && manifest.__sourceDir ? String(manifest.__sourceDir) : ""
+    if (!dir) {
+      var url = String(Qt.resolvedUrl("list.sh"))
+      if (url.indexOf("file://") === 0)
+        url = decodeURIComponent(url.slice(7))
+      var cut = url.lastIndexOf("/")
+      dir = cut >= 0 ? url.slice(0, cut) : url
+    }
     return dir.replace(/\/$/, "")
   }
   readonly property string listScript: pluginDir + "/list.sh"
@@ -832,7 +840,7 @@ Item {
       boundsBehavior: Flickable.StopAtBounds
       pixelAligned: true
       reuseItems: false
-      cacheBuffer: Math.round(height * 3)
+      cacheBuffer: Math.max(0, Math.round(Math.max(0, height) * 3))
       spacing: -(HexLayout.hexHeight(radius) - HexLayout.rowStep(radius))
       opacity: root.opened ? 1 : 0
       Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }

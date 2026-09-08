@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "rblalock.grid-wallpaper-picker",
   "name": "Grid wallpaper picker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "rblalock",
   "license": "MIT",
   "description": "Grid wallpaper picker for Omarchy themes, backgrounds, and a 3000+ theme gallery.",
